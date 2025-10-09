@@ -1,0 +1,215 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
+ */
+package projeto.java;
+
+import java.util.Scanner;
+ import java.util.*;
+
+public class ProjetoJava {
+ static Scanner entrada = new Scanner(System.in);
+    static double saldoReais = 100.00;
+    static double saldoDolares = 0.00;
+    static final double COTACAO_DOLAR = 5.32;
+    static String[] extrato = new String[10];
+    static int posExtrato = 0;
+
+    
+    public static void main(String[] args) {
+        
+       
+
+   
+   
+        int opcao;
+        do {
+            mostrarMenu();
+            opcao = lerInteiro("Escolha uma opção: ");
+            switch (opcao) {
+                case 1 -> mostrarSaldo();
+                case 2 -> deposito();
+                case 3 -> mostrarExtrato();
+                case 4 -> simularEmprestimo();
+                case 5 -> comprarDolar();
+                case 0 -> System.out.println("\nEncerrando o atendimento. Obrigado por utilizar o Caixa Rápido.");
+                default -> System.out.println("\nOpção inválida! Tente novamente.");
+            }
+        } while (opcao != 0);
+    }
+
+    public static void mostrarMenu() {
+        System.out.println("\n===== CAIXA RÁPIDO =====");
+        System.out.println("1 - Saldo");
+        System.out.println("2 - Depósito");
+        System.out.println("3 - Extrato");
+        System.out.println("4 - Simular Empréstimo");
+        System.out.println("5 - Comprar Dólar");
+        System.out.println("0 - Sair");
+        System.out.println("========================");
+    }
+
+    
+    public static void mostrarSaldo() {
+        System.out.printf("\nSaldo em Reais: R$ %.2f\n", saldoReais);
+        if (saldoDolares > 0) {
+            System.out.printf("Saldo em Dólares: US$ %.2f\n", saldoDolares);
+        }
+        voltarOuEncerrar();
+    }
+
+    
+    public static void deposito() {
+        double valor;
+        while (true) {
+            valor = lerDouble("Informe o valor do depósito (R$): ");
+            if (valor <= 0 || valor > 5000) {
+                System.out.println("!!! Valor inválido !!! O depósito deve ser maior que R$ 0,00 e até R$ 5.000,00.");
+            } else {
+                break;
+            }
+        }
+        saldoReais += valor;
+        adicionarExtrato(String.format("DEPÓSITO +R$ %.2f", valor));
+        System.out.println("Depósito realizado com sucesso!");
+        voltarOuEncerrar();
+    }
+
+    
+    public static void mostrarExtrato() {
+        System.out.println("\n===== EXTRATO =====");
+        if (posExtrato == 0) {
+            System.out.println("Nenhum extrato.");
+        } else {
+            for (int i = posExtrato - 1; i >= 0; i--) {
+                System.out.println((posExtrato - i) + ") " + extrato[i]);
+            }
+        }
+        voltarOuEncerrar();
+    }
+
+    public static void simularEmprestimo() {
+        double valor = lerDouble("Informe o valor do empréstimo (R$): ");
+        if (valor < 200 || valor > 100000) {
+            System.out.println("Valor inválido. O empréstimo deve estar entre R$ 200,00 e R$ 100.000,00.");
+            voltarOuEncerrar();
+            return;
+        }
+
+        double salario = lerDouble("Informe o seu salário bruto (R$): ");
+
+        int parcelas;
+        while (true) {
+            parcelas = lerInteiro("Quantidade de parcelas (6, 12, 18, 24, 30, 36, 40, 48, 56, 60 ou 72): ");
+            int[] opcoes = {6, 12, 18, 24, 30, 36, 40, 48, 56, 60, 72};
+            boolean valido = false;
+            for (int p : opcoes) if (p == parcelas) valido = true;
+            if (valido) break;
+            System.out.println("Quantidade de parcelas inválida.");
+        }
+
+        double valorParcela = valor / parcelas;
+        double juros = valor * 0.02;
+        double total = valor + juros;
+
+        double limiteParcela = salario * 0.3;
+
+        System.out.printf("Valor da parcela: R$ %.2f x %d\n", valorParcela, parcelas);
+        System.out.printf("Valor do empréstimo: R$ %.2f\n", valor);
+        System.out.printf("Valor total a pagar (com 2%% de juros): R$ %.2f\n", total);
+
+        if (valorParcela <= limiteParcela) {
+            String protocolo = "EM" + (int)(Math.random() * 90000 + 10000);
+            System.out.println("\nEmpréstimo disponível!");
+            System.out.println("Entre em contato com a central e informe o número de protocolo " + protocolo + ".");
+        } else {
+            System.out.printf("\nEmpréstimo indisponível! O valor da parcela (R$ %.2f) ultrapassa 30%% do salário (R$ %.2f).\n",
+                    valorParcela, limiteParcela);
+        }
+
+        voltarOuEncerrar();
+    }
+
+    
+    public static void comprarDolar() {
+        System.out.printf("Saldo disponível em Reais: R$ %.2f\n", saldoReais);
+        double qtdDolar = lerDouble("Quantos dólares deseja comprar (US$)? ");
+        double custo = qtdDolar * COTACAO_DOLAR;
+        System.out.printf("Custo em Reais: R$ %.2f\n", custo);
+
+        if (custo > saldoReais) {
+            System.out.println("Seu saldo atual é insuficiente.");
+            char resp = lerChar("Deseja simular novamente (R), voltar ao menu (V) ou encerrar o programa (E)? ");
+            if (resp == 'R' || resp == 'r') comprarDolar();
+            else if (resp == 'V' || resp == 'v') return;
+            else System.exit(0);
+        } else {
+            char confirmar = lerChar("Confirmar a compra? (s/n): ");
+            if (confirmar == 's' || confirmar == 'S') {
+                saldoReais -= custo;
+                saldoDolares += qtdDolar;
+                adicionarExtrato(String.format("COMPRA DÓLAR -R$ %.2f | +US$ %.2f", custo, qtdDolar));
+                System.out.println("Compra realizada com sucesso.");
+                System.out.printf("Novo saldo:\n  Reais: R$ %.2f\n  Dólares: US$ %.2f\n", saldoReais, saldoDolares);
+                voltarOuEncerrar();
+            } else {
+                System.out.println("Operação cancelada.");
+                char resp = lerChar("Deseja simular novamente (R), voltar ao menu (V) ou encerrar o programa (E)? ");
+                if (resp == 'R' || resp == 'r') comprarDolar();
+                else if (resp == 'V' || resp == 'v') return;
+                else System.exit(0);
+            }
+        }
+    }
+
+    
+    public static void adicionarExtrato(String movimento) {
+        if (posExtrato == 10) {
+            for (int i = 1; i < 10; i++) {
+                extrato[i - 1] = extrato[i];
+            }
+            posExtrato = 9;
+        }
+        extrato[posExtrato++] = movimento;
+    }
+
+    public static void voltarOuEncerrar() {
+        char opc = lerChar("Deseja voltar ao menu (V) ou encerrar o programa (E)? ");
+        if (opc == 'E' || opc == 'e') {
+            System.out.println("Encerrando o atendimento. Obrigado!");
+            System.exit(0);
+        }
+    }
+
+    public static double lerDouble(String msg) {
+        while (true) {
+            try {
+                System.out.print(msg);
+                return Double.parseDouble(entrada.nextLine().replace(",", "."));
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida! Digite um número válido.");
+            }
+        }
+    }
+
+    public static int lerInteiro(String msg) {
+        while (true) {
+            try {
+                System.out.print(msg);
+                return Integer.parseInt(entrada.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida! Digite um número inteiro.");
+            }
+        }
+    }
+
+    public static char lerChar(String msg) {
+        System.out.print(msg);
+        String s = entrada.nextLine();
+        return s.isEmpty() ? ' ' : s.charAt(0);
+    }
+}
+
+    }
+    
+}
