@@ -1,0 +1,248 @@
+import java.util.Scanner;
+import java.util.Random;
+
+public class CaixaRapidoRefatorado {
+
+    public static void main(String[] args) {
+        Scanner entrada = new Scanner(System.in);
+        Random random = new Random();
+
+        ContaBancaria conta = new ContaBancaria(100.0, 0.0);
+        ServicoCambio cambio = new ServicoCambio(5.32);
+        ExtratoBancario extrato = new ExtratoBancario(10);
+        SimuladorEmprestimo simulador = new SimuladorEmprestimo();
+
+        int opcao;
+        char continuar = 'V';
+
+        do {
+            System.out.println("\n========== CAIXA RÁPIDO ==========");
+            System.out.println("1 - Consultar Saldo");
+            System.out.println("2 - Fazer Depósito");
+            System.out.println("3 - Ver Extrato");
+            System.out.println("4 - Simular Empréstimo");
+            System.out.println("5 - Comprar Dólares");
+            System.out.println("0 - Sair");
+            System.out.print("Escolha uma opção: ");
+            opcao = entrada.nextInt();
+
+            switch (opcao) {
+
+                // saldo
+                case 1:
+                    System.out.printf("\nSaldo em Reais: R$ %.2f%n", conta.saldoReais);
+                    System.out.printf("Saldo em Dólares: US$ %.2f%n", conta.saldoDolares);
+                    continuar = retornoMenu(entrada);
+                    break;
+
+                // depósito
+                case 2:
+                    System.out.print("\nInforme o valor do depósito (R$): ");
+                    double valorDep = entrada.nextDouble();
+
+                    if (valorDep <= 0 || valorDep > 5000) {
+                        System.out.println("!!! Valor inválido !!!");
+                        System.out.println("O depósito deve ser maior que R$ 0,00 e até R$ 5.000,00.");
+                    } else {
+                        conta.depositar(valorDep);
+                        extrato.registrar(new Movimentacao("DEPÓSITO (+)", valorDep));
+                    }
+                    continuar = retornoMenu(entrada);
+                    break;
+
+                // extrato
+                case 3:
+                    extrato.imprimir();
+                    continuar = retornoMenu(entrada);
+                    break;
+
+                // empréstimo
+                case 4:
+                    System.out.print("Informe o valor do empréstimo (R$): ");
+                    double valorEmp = entrada.nextDouble();
+                    System.out.print("Informe seu salário bruto (R$): ");
+                    double salario = entrada.nextDouble();
+                    System.out.print("Quantidade de parcelas: ");
+                    int qtd = entrada.nextInt();
+
+                    if (!simulador.parcelaValida(qtd)) {
+                        System.out.println("Quantidade de parcelas inválida!");
+                        break;
+                    }
+
+                    double parcela = simulador.parcelaFinal(valorEmp, qtd);
+                    double total = simulador.totalComJuros(valorEmp, qtd);
+
+                    System.out.printf("Valor da parcela: R$ %.2f x %d%n", parcela, qtd);
+                    System.out.printf("Total a pagar: R$ %.2f%n", total);
+
+                    if (parcela <= salario * 0.3) {
+                        int protocolo = 10000 + random.nextInt(90000);
+                        System.out.printf("Empréstimo disponível! Protocolo EM%d.%n", protocolo);
+                    } else {
+                        System.out.printf("Empréstimo indisponível. Parcela excede 30%% do salário (máx: R$ %.2f)%n",
+                                salario * 0.3);
+                    }
+                    continuar = retornoMenu(entrada);
+                    break;
+
+                // compra de dólar
+                case 5:
+                    System.out.printf("\nSaldo atual: R$ %.2f%n", conta.saldoReais);
+                    System.out.print("Informe a quantidade de dólares a comprar: ");
+                    double qtdUsd = entrada.nextDouble();
+                    double custo = cambio.custoEmReais(qtdUsd);
+
+                    if (custo > conta.saldoReais) {
+                        System.out.printf("Custo total: R$ %.2f%n", custo);
+                        System.out.println("Saldo insuficiente!");
+                    } else {
+                        System.out.printf("Custo total: R$ %.2f%nConfirmar compra? (S/N): ", custo);
+                        char conf = entrada.next().toUpperCase().charAt(0);
+                        if (conf == 'S') {
+                            conta.comprarDolar(qtdUsd, custo);
+                            extrato.registrar(new Movimentacao("COMPRA DE DÓLARES (-)", -custo));
+                            extrato.registrar(new Movimentacao("DEPÓSITO EM DÓLAR (+)", qtdUsd));
+                            System.out.println("Compra realizada com sucesso!");
+                            System.out.printf("Novo saldo: R$ %.2f | US$ %.2f%n", conta.saldoReais, conta.saldoDolares);
+                        } else {
+                            System.out.println("Operação cancelada.");
+                        }
+                    }
+                    continuar = retornoMenu(entrada);
+                    break;
+
+                // sair
+                case 0:
+                    System.out.println("\nEncerrando o atendimento. Obrigado por utilizar o Caixa Rápido!");
+                    continuar = 'E';
+                    break;
+
+                // opção inválida
+                default:
+                    System.out.println("\nOpção inválida!");
+                    continuar = 'V';
+            }
+
+        } while (continuar == 'V');
+
+        entrada.close();
+        System.out.println("\nPrograma finalizado com sucesso!");
+    }
+
+    public static char retornoMenu(Scanner entrada) {
+        System.out.print("\nDeseja voltar ao menu (V) ou encerrar o programa (E)? ");
+        return entrada.next().toUpperCase().charAt(0);
+    }
+}
+
+// classe da conta bancária
+class ContaBancaria {
+    public double saldoReais;
+    public double saldoDolares;
+
+    public ContaBancaria(double saldoReais, double saldoDolares) {
+        this.saldoReais = saldoReais;
+        this.saldoDolares = saldoDolares;
+    }
+
+    public void depositar(double valor) {
+        saldoReais += valor;
+        System.out.printf("Depósito de R$ %.2f realizado com sucesso!%n", valor);
+    }
+
+    public void comprarDolar(double qtdUsd, double custoEmReais) {
+        saldoReais -= custoEmReais;
+        saldoDolares += qtdUsd;
+    }
+}
+
+// classe do serviço de câmbio
+class ServicoCambio {
+    public double cotacao;
+
+    public ServicoCambio(double cotacao) {
+        this.cotacao = cotacao;
+    }
+
+    public double custoEmReais(double qtdUsd) {
+        return qtdUsd * cotacao;
+    }
+}
+
+// classe da movimentação (linha do extrato)
+class Movimentacao {
+    public String texto;
+    public double valor;
+
+    public Movimentacao(String texto, double valor) {
+        this.texto = texto;
+        this.valor = valor;
+    }
+}
+
+// classe do extrato bancário
+class ExtratoBancario {
+    public int capacidade, prox, count;
+    public Movimentacao[] itens;
+
+    public ExtratoBancario(int capacidade) {
+        this.capacidade = capacidade;
+        this.itens = new Movimentacao[capacidade];
+        this.prox = 0;
+        this.count = 0;
+    }
+
+    public void registrar(Movimentacao m) {
+        itens[prox] = m;
+        prox = (prox + 1) % capacidade;
+        if (count < capacidade) count++;
+    }
+
+    public boolean vazio() {
+        return count == 0;
+    }
+
+    public void imprimir() {
+        if (vazio()) {
+            System.out.println("Nenhum extrato registrado.");
+            return;
+        }
+
+        System.out.println("\n===== EXTRATO =====");
+        for (int i = 0; i < count; i++) {
+            int idx = (prox - 1 - i + capacidade) % capacidade;
+            Movimentacao m = itens[idx];
+            if (m.texto.startsWith("DEPÓSITO EM DÓLAR")) {
+                System.out.printf("%s +US$ %.2f%n", m.texto, m.valor);
+            } else if (m.texto.startsWith("COMPRA DE DÓLARES")) {
+                System.out.printf("%s -R$ %.2f%n", m.texto, Math.abs(m.valor));
+            } else {
+                String sinal = m.valor >= 0 ? "+" : "";
+                System.out.printf("%s %sR$ %.2f%n", m.texto, sinal, m.valor);
+            }
+        }
+        System.out.println("====================");
+    }
+}
+
+// classe do simulador de empréstimos
+class SimuladorEmprestimo {
+    public double jurosPorParcela = 0.02;
+    public int[] permitidas = {6, 12, 18, 24, 30, 36, 40, 48, 56, 60, 72};
+
+    public boolean parcelaValida(int p) {
+        for (int x : permitidas) {
+            if (x == p) return true;
+        }
+        return false;
+    }
+
+    public double parcelaFinal(double emprestimo, int qtd) {
+        return (emprestimo / qtd) * (1 + jurosPorParcela);
+    }
+
+    public double totalComJuros(double emprestimo, int qtd) {
+        return parcelaFinal(emprestimo, qtd) * qtd;
+    }
+}
